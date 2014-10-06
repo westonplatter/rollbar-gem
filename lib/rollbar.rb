@@ -51,6 +51,12 @@ module Rollbar
       end
       yield(configuration)
 
+      if configuration[:locals][:enabled]
+        start_tracking_locals
+      else
+        stop_tracking_locals
+      end
+
       require_hooks
     end
 
@@ -236,6 +242,120 @@ module Rollbar
 
     private
 
+    # Trace local variables and method args per stack frame
+    # Save an on-going stack of local variable contexts
+    # To "replay" the stack, traverse the @trace_store from back to front (top to bottom)
+    attr_accessor :trace_store
+    attr_accessor :trace_store_search_index # used to iterate through trace_store
+    attr_accessor :is_tracing
+    attr_accessor :seen_first_return
+
+    def trace_store
+      @trace_store ||= []
+    end
+
+    def add_trace_frame_locals(filename, lineno, local_variables={})
+      trace_store << { :filename => filename, :lineno => lineno }.merge!(local_variables)
+      # keep store within limits
+      trace_store.shift if trace_store.count > configuration[:locals][:max_trace_frames]
+    end
+
+    # Returns the most recently stored local variables for a given filename and line number
+    # Uses @trace_store_search_index to know where to we left off
+    def recent_trace_frame_locals(filename, lineno)
+      @trace_store_search_index ||= -1
+      while (@trace_store_search_index += 1) < trace_store.count
+        current_frame = trace_store[@trace_store_search_index]
+        if current_frame[:filename] == filename && current_frame[:lineno] == lineno
+          return current_frame
+        end
+      end
+      # or fallback
+      local_variables_struct
+    end
+
+    def reset_current_trace
+      @trace_store_search_index = nil
+      trace_store = nil
+    end
+
+    # Use this eval string to get arguments of __method__
+    # Omit `:block` arguments because they may require unpredicable parameters
+    EVAL_GET_METHOD_ARGUMENT_NAMES = %{
+      if __method__ && respond_to?(__method__)
+         method(__method__).parameters.map{ |p_type, p_name| p_name unless p_type == :block }.collect
+      end
+    }
+
+    # Method#parameters is unavailable in Ruby 1.8.7 and below
+    CAN_CHECK_METHOD_PARAMS = Method.method_defined? :parameters
+
+    def local_variables_struct
+      if CAN_CHECK_METHOD_PARAMS
+        { :locals => {}, :args => {} }
+      else
+        { :locals => {} }
+      end
+    end
+
+    def start_tracking_locals
+      reset_current_trace
+      set_trace_func proc { |event, file, line, id, binding, classname|
+        if @is_tracing
+          if event == "return" or @seen_first_return
+            @seen_first_return = true if event == "return"
+            # get local and arg variables
+            local_vars = local_variables_struct
+            begin
+              all_variable_names = binding.eval("local_variables")
+              arg_names = CAN_CHECK_METHOD_PARAMS ? binding.eval(EVAL_GET_METHOD_ARGUMENT_NAMES) : []
+            rescue => e
+              log_error "[Rollbar] Error getting names of local variables: #{e}"
+            end
+            all_variable_names ||= []
+            arg_names ||= []
+
+            all_variable_names.each do |var_name|
+              begin
+                if var_value = binding.eval(var_name.to_s)
+                  var_name = var_name.to_sym # ensure symbol for older versions of Ruby
+                  if arg_names.include? var_name
+                    local_vars[:args][var_name] = var_value
+                  else
+                    local_vars[:locals][var_name] = var_value
+                  end
+                end
+              rescue => e
+                log_error "[Rollbar] Error accessing local variables: #{e}"
+              end
+            end
+
+            # if we've already seen the first "return" and this is not a return
+            # this will be the last frame we trace
+            if @seen_first_return and event != "return"
+              @is_tracing = false
+              # In order to match the backtrace frames, subtract the last frame's lineno by 1
+              add_trace_frame_locals(file, line-1, local_vars)
+            else
+              add_trace_frame_locals(file, line, local_vars)
+            end
+          end
+        else
+          # Start tracing once we see the first return
+          if id == :backtrace and classname == Exception and event == "c-return"
+            reset_current_trace
+            @is_tracing = true
+            @seen_first_return = false
+          end
+        end
+      }
+    end
+
+    def stop_tracking_locals
+      reset_current_trace
+      set_trace_func(nil)
+    end
+
     def attach_request_data(payload, request_data)
       if request_data[:route]
         route = request_data[:route]
@@ -344,10 +464,18 @@ module Rollbar
           # parse the line
           match = frame.match(/(.*):(\d+)(?::in `([^']+)')?/)
           if match
-            { :filename => match[1], :lineno => match[2].to_i, :method => match[3] }
+            frame_info = { :filename => match[1], :lineno => match[2].to_i, :method => match[3] }
           else
-            { :filename => "<unknown>", :lineno => 0, :method => frame }
+            frame_info = { :filename => "<unknown>", :lineno => 0, :method => frame }
           end
+
+          # add frame locals
+          if configuration[:locals][:enabled]
+            locals = recent_trace_frame_locals(frame_info[:filename], frame_info[:lineno])
+            frame_info.merge!(locals)
+          end
+
+          frame_info
         }
         # reverse so that the order is as rollbar expects
         frames.reverse!
@@ -362,6 +490,10 @@ module Rollbar
           :message => exception.message
         }
       }
+      data[:server] = server_data
+
+      reset_current_trace
+      data
     end
 
     def logger
