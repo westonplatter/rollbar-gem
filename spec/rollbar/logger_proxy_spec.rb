@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'rollbar/logger_proxy'
 
 describe Rollbar::LoggerProxy do
   let(:logger) { double(:logger) }
