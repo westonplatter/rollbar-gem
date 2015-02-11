@@ -15,10 +15,12 @@ Rake::Task['dummy:db:setup'].invoke
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
 
 RSpec.configure do |config|
+  config.infer_spec_type_from_file_location!
+  
   config.include(NotifierHelpers)
   config.include(FixtureHelpers)
 
-  config.color_enabled = true
+  config.color = true
   config.formatter = 'documentation'
 
   config.use_transactional_fixtures = true
