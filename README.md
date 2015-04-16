@@ -664,6 +664,114 @@ MultiJson.use(:json_common)
 ```
 
 
+## Configuration Reference
+
+Inside your `Rollbar.configure` block, you can set the following configuration options:
+
+  <dl>
+  <dt>access_token</dt>
+  <dd>Your `post_server_item` Rollbar access token. You can find this in the Rollbar interface: go to the relevant project, then Settings - Project Access Tokens.</dd>
+
+  <dt>async_handler</dt>
+  <dd>A proc which will asynchronously send a payload to Rollbar. See "Using Another Handler" above.
+  </dd>
+
+  <dt>branch</dt>
+  <dd>The name of the current code branch</dd>
+
+  <dt>code_version</dt>
+  <dd>A string describing the version of the running code. If you use Git, this should be the current SHA.</dd>
+
+  <dt>custom_data_method</dt>
+  <dd>See "Including Additional Runtime Data" above.</dd>
+
+  <dt>default_logger</dt>
+  <dd></dd>
+
+  <dt>disable_monkey_patch</dt>
+  <dd></dd>
+
+  <dt>dj_threshold</dt>
+  <dd></dd>
+
+  <dt>enabled</dt>
+  <dd></dd>
+
+  <dt>endpoint</dt>
+  <dd></dd>
+
+  <dt>environment</dt>
+  <dd></dd>
+
+  <dt>exception_level_filters</dt>
+  <dd></dd>
+
+  <dt>failover_handlers</dt>
+  <dd></dd>
+
+  <dt>filepath</dt>
+  <dd></dd>
+
+  <dt>framework</dt>
+  <dd></dd>
+
+  <dt>ignored_person_ids</dt>
+  <dd></dd>
+
+  <dt>logger</dt>
+  <dd></dd>
+
+  <dt>payload_options</dt>
+  <dd></dd>
+
+  <dt>person_method</dt>
+  <dd></dd>
+
+  <dt>person_id_method</dt>
+  <dd></dd>
+
+  <dt>person_username_method</dt>
+  <dd></dd>
+
+  <dt>person_email_method</dt>
+  <dd></dd>
+
+  <dt>populate_empty_backtraces</dt>
+  <dd></dd>
+
+  <dt>report_dj_data</dt>
+  <dd></dd>
+
+  <dt>request_timeout</dt>
+  <dd></dd>
+
+  <dt>root</dt>
+  <dd></dd>
+
+  <dt>scrub_fields</dt>
+  <dd></dd>
+
+  <dt>uncaught_exception_level</dt>
+  <dd></dd>
+
+  <dt>scrub_headers</dt>
+  <dd></dd>
+
+  <dt>use_async</dt>
+  <dd></dd>
+
+  <dt>use_eventmachine</dt>
+  <dd></dd>
+
+  <dt>web_base</dt>
+  <dd></dd>
+
+  <dt>write_to_file</dt>
+  <dd></dd>
+
+  </dl>
+
+
 ## Help / Support
 
 If you run into any issues, please email us at [support@rollbar.com](mailto:support@rollbar.com)
