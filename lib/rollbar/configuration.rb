@@ -137,15 +137,16 @@ module Rollbar
 
     def use_eventmachine=(value)
       require 'em-http-request' if value
+
       @use_eventmachine = value
     end
 
     def project_gems=(gems)
       @project_gem_paths = gems.map do |name|
         found = Gem::Specification.each.select { |spec| name === spec.name }
-        if found.empty?
-          puts "[Rollbar] No gems found matching #{name.inspect}"
-        end
+
+        logger.warning "[Rollbar] No gems found matching #{name.inspect}" if found.empty?
+
         found
       end.flatten.uniq.map(&:gem_dir)
     end

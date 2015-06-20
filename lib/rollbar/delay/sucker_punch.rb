@@ -11,6 +11,7 @@ module Rollbar
       end
 
       def perform(*args)
+        payload = Rollbar::Payload.new(args.first, Rollbar.configuration)
         Rollbar.process_payload_safely(*args)
       end
     end

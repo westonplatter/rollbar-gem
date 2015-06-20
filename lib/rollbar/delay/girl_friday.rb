@@ -15,7 +15,9 @@ module Rollbar
       end
 
       def call(payload)
-        self.class.queue = queue_class.new(nil, :size => 5) do |payload|
+        self.class.queue = queue_class.new(nil, :size => 5) do |payload_value|
+          payload = Rollbar::Payload.new(payload_value, Rollbar.configuration)
+
           Rollbar.process_payload_safely(payload)
         end
 

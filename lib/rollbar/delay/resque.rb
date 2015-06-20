@@ -1,4 +1,5 @@
 require 'resque'
+require 'rollbar/payload'
 
 module Rollbar
   module Delay
@@ -22,7 +23,9 @@ module Rollbar
           new.perform(payload)
         end
 
-        def perform(payload)
+        def perform(payload_value)
+          payload = Rollbar::Payload.new(payload_value, Rollbar.configuration)
+
           Rollbar.process_payload_safely(payload)
         end
       end
