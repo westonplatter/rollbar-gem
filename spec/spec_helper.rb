@@ -10,6 +10,9 @@ namespace :dummy do
   load 'spec/dummyapp/Rakefile'
 end
 
+require 'java'
+java.security.Security.setProperty("jdk.tls.disabledAlgorithms", "SSLv3, DHE")
+
 Rake::Task['dummy:db:setup'].invoke
 
 Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
@@ -50,3 +53,4 @@ end
 def local?
   ENV['LOCAL'] == '1'
 end
+
