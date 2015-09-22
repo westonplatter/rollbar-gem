@@ -22,6 +22,7 @@ Dir["#{File.dirname(__FILE__)}/support/**/*.rb"].each { |f| require f }
 
 RSpec.configure do |config|
   config.extend(Helpers)
+  config.include(Helpers)
   config.include(NotifierHelpers)
   config.include(FixtureHelpers)
   config.include(EncodingHelpers)
