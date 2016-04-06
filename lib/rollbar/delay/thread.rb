@@ -21,11 +21,11 @@ module Rollbar
           thread
         end
 
-        private
-
         def threads
           @threads ||= Queue.new
         end
+
+        private
 
         def spawn_threads_reaper
           return if @spawned

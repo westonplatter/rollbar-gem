@@ -5,9 +5,12 @@ describe Rollbar::Delay::Thread do
     let(:payload) { { :key => 'value' } }
 
     it 'process the payload in a new thread' do
-      expect(Rollbar).to receive(:process_from_async_handler).with(payload)
+      expect(Rollbar).to receive(:process_from_async_handler).with(payload).twice
 
       described_class.call(payload).join
+      described_class.call(payload).join
+
+      expect(Rollbar::Delay::Thread.threads).to be_empty
     end
 
     context 'with exceptions processing payload' do
