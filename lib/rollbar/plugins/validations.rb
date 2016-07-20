@@ -27,7 +27,12 @@ Rollbar.plugins.define('active_model') do
 
   execute! do
     ActiveModel::Validations.module_eval do
-      include Rollbar::ActiveRecordExtension
+      saved_included_block = @_included_block
+
+      @_included_block = proc do
+        instance_eval(&saved_included_block)
+        include Rollbar::ActiveRecordExtension
+      end
     end
   end
 end
